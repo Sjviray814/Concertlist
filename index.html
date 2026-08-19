@@ -105,7 +105,10 @@
     overflow:hidden;
     position:relative;
     border:1px solid var(--border);
+    cursor:pointer;
+    transition:border-color .15s ease;
   }
+  .stub:hover{border-color:var(--text-faint);}
   .stub-main{flex:1; padding:14px 12px 14px 16px; min-width:0;}
   .artist-row{display:flex; align-items:center; gap:10px; margin-bottom:8px;}
   .artist-row .artist{margin:0 0 2px;}
@@ -336,6 +339,7 @@
         <button class="chip" data-sort="score">TOP RATED</button>
         <button class="chip" data-sort="artist">A–Z</button>
       </div>
+      <div class="controls" id="genreControls"></div>
       <div id="mineList"></div>
     </section>
 
@@ -416,9 +420,9 @@
   <!-- ADD CONCERT MODAL -->
   <div class="modal-backdrop" id="modalBackdrop">
     <div class="modal">
-      <h2 class="display">Log a Show</h2>
+      <h2 class="display" id="modalTitle">Log a Show</h2>
 
-      <div class="api-box">
+      <div class="api-box" id="slSearchBox">
         <label>SEARCH A PAST SHOW (SETLIST.FM)</label>
         <div class="api-row">
           <input type="text" id="slKey" placeholder="Free API key">
@@ -471,6 +475,9 @@
         <label>NOTES (OPTIONAL)</label>
         <textarea id="f-notes" placeholder="How was the sound, the crowd, the setlist..."></textarea>
       </div>
+      <div class="modal-actions" id="deleteRow" style="display:none;">
+        <button class="btn-secondary" id="deleteShow" style="color:var(--magenta); border-color:var(--magenta);">Delete this show</button>
+      </div>
       <div class="modal-actions">
         <button class="btn-secondary" id="cancelAdd">Cancel</button>
         <button class="btn-primary" id="saveAdd">Save show</button>
@@ -483,15 +490,16 @@
 <script>
 // ---------- Mock data ----------
 let concerts = [
-  {artist:"Jamie xx", venue:"Knockdown Center, NYC", date:"2025-09-06", genre:"Electronic", score:9.5, notes:"Sound system was unreal. Danced for 4 hours straight."},
-  {artist:"Bicep", venue:"Brooklyn Mirage, NYC", date:"2025-08-14", genre:"Techno", score:9.2, notes:""},
-  {artist:"Overmono", venue:"Brooklyn Steel, NYC", date:"2025-03-01", genre:"Bass", score:9.0, notes:"Best bass drops of the year."},
-  {artist:"Four Tet", venue:"Red Rocks, CO", date:"2024-09-10", genre:"Electronic", score:8.9, notes:""},
-  {artist:"Fred again..", venue:"Terminal 5, NYC", date:"2024-11-02", genre:"House", score:8.7, notes:"Crowd energy was insane."},
-  {artist:"Peggy Gou", venue:"Governors Ball, NYC", date:"2024-06-08", genre:"House", score:8.0, notes:""},
-  {artist:"Bonobo", venue:"Radio City Music Hall, NYC", date:"2024-06-20", genre:"Downtempo", score:7.5, notes:""},
-  {artist:"Charlotte de Witte", venue:"Basement, Brooklyn", date:"2023-10-28", genre:"Techno", score:6.5, notes:"Great DJ, rough venue sound."},
+  {id:1, artist:"Jamie xx", venue:"Knockdown Center, NYC", date:"2025-09-06", genre:"Electronic", score:9.5, notes:"Sound system was unreal. Danced for 4 hours straight."},
+  {id:2, artist:"Bicep", venue:"Brooklyn Mirage, NYC", date:"2025-08-14", genre:"Techno", score:9.2, notes:""},
+  {id:3, artist:"Overmono", venue:"Brooklyn Steel, NYC", date:"2025-03-01", genre:"Bass", score:9.0, notes:"Best bass drops of the year."},
+  {id:4, artist:"Four Tet", venue:"Red Rocks, CO", date:"2024-09-10", genre:"Electronic", score:8.9, notes:""},
+  {id:5, artist:"Fred again..", venue:"Terminal 5, NYC", date:"2024-11-02", genre:"House", score:8.7, notes:"Crowd energy was insane."},
+  {id:6, artist:"Peggy Gou", venue:"Governors Ball, NYC", date:"2024-06-08", genre:"House", score:8.0, notes:""},
+  {id:7, artist:"Bonobo", venue:"Radio City Music Hall, NYC", date:"2024-06-20", genre:"Downtempo", score:7.5, notes:""},
+  {id:8, artist:"Charlotte de Witte", venue:"Basement, Brooklyn", date:"2023-10-28", genre:"Techno", score:6.5, notes:"Great DJ, rough venue sound."},
 ];
+let nextId = concerts.length + 1;
 
 // Real, verified tour dates (checked Jul 2026 via Ticketmaster / Songkick / Music Festival Wizard)
 // Kept as reference — Discover now pulls live results directly from Ticketmaster instead.
@@ -520,8 +528,17 @@ function escAttr(str){
 
 // ---------- Render: My Sets ----------
 let currentSort = 'date';
+let currentGenreFilter = 'All';
+
+function renderGenreFilter(){
+  const wrap = document.getElementById('genreControls');
+  const genres = ['All', ...new Set(concerts.map(c=>c.genre))].sort((a,b)=> a==='All' ? -1 : b==='All' ? 1 : a.localeCompare(b));
+  if(!genres.includes(currentGenreFilter)) currentGenreFilter = 'All';
+  wrap.innerHTML = genres.map(g => `<button class="chip${g===currentGenreFilter?' active':''}" data-genre="${escAttr(g)}">${g.toUpperCase()}</button>`).join('');
+}
 
 function renderMine(){
+  renderGenreFilter();
   const list = document.getElementById('mineList');
   const countEl = document.getElementById('mineCount');
   countEl.textContent = concerts.length + (concerts.length === 1 ? " show logged" : " shows logged");
@@ -531,13 +548,19 @@ function renderMine(){
     return;
   }
 
-  let sorted = [...concerts];
-  if(currentSort === 'date') sorted.sort((a,b)=> new Date(b.date) - new Date(a.date));
-  if(currentSort === 'score') sorted.sort((a,b)=> b.score - a.score);
-  if(currentSort === 'artist') sorted.sort((a,b)=> a.artist.localeCompare(b.artist));
+  let filtered = currentGenreFilter === 'All' ? [...concerts] : concerts.filter(c=> c.genre === currentGenreFilter);
 
-  list.innerHTML = sorted.map(c => `
-    <div class="stub">
+  if(filtered.length === 0){
+    list.innerHTML = `<div class="empty"><div class="display">No shows in ${escAttr(currentGenreFilter)}</div><p>Try a different genre filter.</p></div>`;
+    return;
+  }
+
+  if(currentSort === 'date') filtered.sort((a,b)=> new Date(b.date) - new Date(a.date));
+  if(currentSort === 'score') filtered.sort((a,b)=> b.score - a.score);
+  if(currentSort === 'artist') filtered.sort((a,b)=> a.artist.localeCompare(b.artist));
+
+  list.innerHTML = filtered.map(c => `
+    <div class="stub" data-id="${c.id}">
       <div class="stub-main">
         <div class="artist-row">
           <div class="artist-avatar" data-artist-avatar="${escAttr(c.artist)}"><span>${escAttr(c.artist.charAt(0).toUpperCase())}</span></div>
@@ -566,6 +589,19 @@ document.getElementById('sortControls').addEventListener('click', (e)=>{
   btn.classList.add('active');
   currentSort = btn.dataset.sort;
   renderMine();
+});
+
+document.getElementById('genreControls').addEventListener('click', (e)=>{
+  const btn = e.target.closest('.chip');
+  if(!btn) return;
+  currentGenreFilter = btn.dataset.genre;
+  renderMine();
+});
+
+document.getElementById('mineList').addEventListener('click', (e)=>{
+  const stub = e.target.closest('.stub');
+  if(!stub) return;
+  openEditModal(parseInt(stub.dataset.id, 10));
 });
 
 // ---------- Render: Rankings ----------
@@ -923,20 +959,68 @@ async function searchPastShows(){
   }
 }
 
-// ---------- Add concert modal ----------
+// ---------- Add/Edit concert modal ----------
 const backdrop = document.getElementById('modalBackdrop');
-document.getElementById('fabAdd').addEventListener('click', ()=>{
+const scoreRange = document.getElementById('f-score');
+const scoreVal = document.getElementById('f-score-val');
+let editingId = null;
+
+function resetModalFields(){
+  document.getElementById('f-artist').value = '';
+  document.getElementById('f-venue').value = '';
   document.getElementById('f-date').value = new Date().toISOString().slice(0,10);
+  document.getElementById('f-genre').value = 'Techno';
+  document.getElementById('f-notes').value = '';
+  scoreRange.value = 8;
+  scoreVal.textContent = 8;
   document.getElementById('slArtist').value = '';
   document.getElementById('slYear').value = '';
   document.getElementById('slResults').innerHTML = '';
-  backdrop.classList.add('active');
-});
-document.getElementById('cancelAdd').addEventListener('click', ()=> backdrop.classList.remove('active'));
-backdrop.addEventListener('click', (e)=>{ if(e.target === backdrop) backdrop.classList.remove('active'); });
+}
 
-const scoreRange = document.getElementById('f-score');
-const scoreVal = document.getElementById('f-score-val');
+function openAddModal(){
+  editingId = null;
+  resetModalFields();
+  document.getElementById('modalTitle').textContent = 'Log a Show';
+  document.getElementById('saveAdd').textContent = 'Save show';
+  document.getElementById('slSearchBox').style.display = '';
+  document.getElementById('deleteRow').style.display = 'none';
+  backdrop.classList.add('active');
+}
+
+function openEditModal(id){
+  const c = concerts.find(x=> x.id === id);
+  if(!c) return;
+  editingId = id;
+  document.getElementById('f-artist').value = c.artist;
+  document.getElementById('f-venue').value = c.venue;
+  document.getElementById('f-date').value = c.date;
+  document.getElementById('f-genre').value = c.genre;
+  document.getElementById('f-notes').value = c.notes || '';
+  scoreRange.value = c.score;
+  scoreVal.textContent = c.score;
+  document.getElementById('modalTitle').textContent = 'Edit Show';
+  document.getElementById('saveAdd').textContent = 'Save changes';
+  document.getElementById('slSearchBox').style.display = 'none';
+  document.getElementById('deleteRow').style.display = '';
+  backdrop.classList.add('active');
+}
+
+function closeModal(){
+  backdrop.classList.remove('active');
+  editingId = null;
+}
+
+function refreshAllScreens(){
+  renderMine();
+  renderRankings();
+  renderCompare();
+}
+
+document.getElementById('fabAdd').addEventListener('click', openAddModal);
+document.getElementById('cancelAdd').addEventListener('click', closeModal);
+backdrop.addEventListener('click', (e)=>{ if(e.target === backdrop) closeModal(); });
+
 scoreRange.addEventListener('input', ()=> scoreVal.textContent = scoreRange.value);
 
 document.getElementById('saveAdd').addEventListener('click', ()=>{
@@ -952,22 +1036,28 @@ document.getElementById('saveAdd').addEventListener('click', ()=>{
     return;
   }
 
-  concerts.push({artist, venue, date, genre, score, notes});
+  if(editingId !== null){
+    const c = concerts.find(x=> x.id === editingId);
+    Object.assign(c, {artist, venue, date, genre, score, notes});
+  } else {
+    concerts.push({id: nextId++, artist, venue, date, genre, score, notes});
+  }
 
-  document.getElementById('f-artist').value = '';
-  document.getElementById('f-venue').value = '';
-  document.getElementById('f-notes').value = '';
-  scoreRange.value = 8;
-  scoreVal.textContent = 8;
-  backdrop.classList.remove('active');
-
-  renderMine();
-  renderRankings();
-  renderCompare();
+  closeModal();
+  refreshAllScreens();
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.querySelector('.tab-btn[data-screen="mine"]').classList.add('active');
   document.getElementById('screen-mine').classList.add('active');
+});
+
+document.getElementById('deleteShow').addEventListener('click', ()=>{
+  if(editingId === null) return;
+  const c = concerts.find(x=> x.id === editingId);
+  if(c && !confirm(`Delete "${c.artist}" at ${c.venue}? This can't be undone.`)) return;
+  concerts = concerts.filter(x=> x.id !== editingId);
+  closeModal();
+  refreshAllScreens();
 });
 
 // ---------- Init ----------
