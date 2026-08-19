@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ConcertList — Log every set</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-deep:#0F0C14;
+    --bg-surface:#1A1622;
+    --bg-elevated:#241E2E;
+    --bg-elevated-2:#2C2438;
+    --magenta:#FF2E7A;
+    --amber:#FFB627;
+    --cyan:#3EC6E0;
+    --text-primary:#F5F1F8;
+    --text-muted:#9A8FA8;
+    --text-faint:#6B6178;
+    --border:#332B42;
+    --shell-width:420px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg-deep);
+    background-image:
+      radial-gradient(circle at 20% 0%, rgba(255,46,122,0.10), transparent 45%),
+      radial-gradient(circle at 85% 15%, rgba(62,198,224,0.08), transparent 40%);
+    color:var(--text-primary);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    -webkit-font-smoothing:antialiased;
+  }
+  .display{font-family:'Anton',sans-serif; letter-spacing:0.02em; text-transform:uppercase;}
+  .mono{font-family:'Space Mono',monospace;}
+
+  /* app shell */
+  #app{
+    width:100%;
+    max-width:var(--shell-width);
+    height:100vh;
+    background:var(--bg-surface);
+    position:relative;
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+    box-shadow:0 0 80px rgba(0,0,0,0.6);
+    border-left:1px solid var(--border);
+    border-right:1px solid var(--border);
+  }
+
+  header.topbar{
+    padding:22px 20px 16px;
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    border-bottom:1px solid var(--border);
+    position:sticky;
+    top:0;
+    background:var(--bg-surface);
+    z-index:5;
+  }
+  header.topbar .wordmark{font-size:22px; display:flex; align-items:baseline; gap:2px;}
+  header.topbar .wordmark span{color:var(--magenta);}
+  header.topbar .tagline{font-size:10px; color:var(--text-faint); font-family:'Space Mono',monospace; letter-spacing:0.05em;}
+
+  main{flex:1; padding:18px 16px 96px; overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch;}
+
+  .screen{display:none; animation:fadeIn .25s ease;}
+  .screen.active{display:block;}
+  @keyframes fadeIn{from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);}}
+
+  .section-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;}
+  .section-head h1{font-size:26px; margin:0;}
+  .section-head p{font-size:12px; color:var(--text-muted); margin:4px 0 0; font-family:'Space Mono',monospace;}
+
+  /* controls */
+  .controls{display:flex; gap:8px; margin-bottom:16px; overflow-x:auto; padding-bottom:2px;}
+  .chip{
+    flex:0 0 auto;
+    font-size:11px;
+    font-family:'Space Mono',monospace;
+    padding:6px 12px;
+    border-radius:20px;
+    border:1px solid var(--border);
+    background:var(--bg-elevated);
+    color:var(--text-muted);
+    cursor:pointer;
+    white-space:nowrap;
+    transition:all .15s ease;
+  }
+  .chip.active{background:var(--magenta); color:#fff; border-color:var(--magenta);}
+
+  /* ticket stub card - signature element */
+  .stub{
+    display:flex;
+    background:var(--bg-elevated);
+    border-radius:10px;
+    margin-bottom:14px;
+    overflow:hidden;
+    position:relative;
+    border:1px solid var(--border);
+  }
+  .stub-main{flex:1; padding:14px 12px 14px 16px; min-width:0;}
+  .artist-row{display:flex; align-items:center; gap:10px; margin-bottom:8px;}
+  .artist-row .artist{margin:0 0 2px;}
+  .artist-avatar{
+    width:36px; height:36px; border-radius:50%; flex:0 0 auto; overflow:hidden;
+    background:var(--bg-elevated-2); display:flex; align-items:center; justify-content:center;
+    font-family:'Anton',sans-serif; font-size:13px; color:var(--text-muted);
+  }
+  .artist-avatar img{width:100%; height:100%; object-fit:cover; display:block;}
+  .stub-main .artist{font-size:16px; font-weight:700; margin:0 0 2px; line-height:1.2;}
+  .stub-main .venue{font-size:12px; color:var(--text-muted); margin:0 0 8px;}
+  .stub-main .meta{display:flex; gap:10px; font-size:10.5px; color:var(--text-faint); font-family:'Space Mono',monospace;}
+  .stub-main .genre-tag{
+    display:inline-block; margin-top:8px; font-size:10px; font-family:'Space Mono',monospace;
+    padding:2px 8px; border-radius:4px; background:var(--bg-elevated-2); color:var(--cyan);
+  }
+  .perf{
+    width:0; position:relative; flex:0 0 auto;
+    border-left:2px dashed var(--border);
+  }
+  .perf::before, .perf::after{
+    content:''; position:absolute; width:14px; height:14px; background:var(--bg-surface);
+    border-radius:50%; left:-8px;
+  }
+  .perf::before{top:-7px;}
+  .perf::after{bottom:-7px;}
+  .stub-stamp{
+    flex:0 0 76px;
+    display:flex; align-items:center; justify-content:center;
+    padding:10px;
+  }
+  .stamp{
+    width:52px; height:52px; border-radius:50%;
+    border:2px solid currentColor;
+    display:flex; align-items:center; justify-content:center; flex-direction:column;
+    transform:rotate(-9deg);
+    font-family:'Space Mono',monospace;
+    position:relative;
+  }
+  .stamp::before{
+    content:''; position:absolute; inset:4px; border:1px dashed currentColor; border-radius:50%; opacity:0.5;
+  }
+  .stamp .score{font-size:16px; font-weight:700; line-height:1;}
+  .stamp .max{font-size:7px; opacity:0.7;}
+  .score-high{color:var(--magenta);}
+  .score-mid{color:var(--amber);}
+  .score-low{color:var(--cyan);}
+
+  /* discover cards */
+  .show-card{
+    background:var(--bg-elevated);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:14px 16px;
+    margin-bottom:12px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:12px;
+  }
+  .show-card .info{flex:1; min-width:0;}
+  .show-card .info .artist{font-size:15px; font-weight:700; margin:0 0 3px;}
+  .show-card .info .details{font-size:11px; color:var(--text-muted); font-family:'Space Mono',monospace;}
+  .show-card .price{font-size:11px; color:var(--amber); font-family:'Space Mono',monospace; margin-top:6px;}
+  .buy-btn{
+    flex:0 0 auto; background:var(--magenta); color:#fff; border:none; border-radius:20px;
+    padding:9px 16px; font-size:11px; font-weight:600; font-family:'Inter',sans-serif;
+    cursor:pointer; white-space:nowrap;
+  }
+  .buy-btn:hover{background:#ff529a;}
+
+  .api-box{
+    background:var(--bg-elevated); border:1px solid var(--border); border-radius:10px;
+    padding:12px 14px; margin-bottom:14px;
+  }
+  .origin-warning{
+    background:rgba(255,182,39,0.1); border:1px solid var(--amber); border-radius:10px;
+    padding:10px 14px; margin-bottom:14px; font-size:11px; color:var(--amber); line-height:1.6;
+  }
+  .origin-warning code{background:var(--bg-elevated-2); padding:1px 5px; border-radius:4px; font-family:'Space Mono',monospace;}
+
+  .sl-result{
+    padding:9px 10px; border-radius:8px; background:var(--bg-elevated-2); margin-top:6px;
+    cursor:pointer; font-size:12px; line-height:1.4;
+  }
+  .sl-result:hover{background:var(--bg-surface);}
+  .sl-result .sl-date{color:var(--cyan); font-family:'Space Mono',monospace; font-size:10.5px; margin-top:2px;}
+  .api-box label{display:block; font-size:10.5px; color:var(--text-muted); font-family:'Space Mono',monospace; margin-bottom:6px;}
+  .api-row{display:flex; gap:8px;}
+  .api-row input{
+    flex:1; min-width:0; background:var(--bg-surface); border:1px solid var(--border); border-radius:8px;
+    color:var(--text-primary); padding:8px 10px; font-size:12px; font-family:'Space Mono',monospace;
+  }
+  .chip-btn{
+    flex:0 0 auto; background:var(--cyan); color:#0F0C14; border:none; border-radius:8px;
+    padding:8px 14px; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap;
+  }
+  .chip-btn:hover{background:#5fd6ec;}
+  .api-hint{font-size:10.5px; color:var(--text-faint); margin:8px 0 0; line-height:1.5; word-break:break-word;}
+  .api-hint a{color:var(--cyan);}
+
+  .search-row{display:flex; gap:6px; margin-bottom:16px;}
+  .search-row input{
+    min-width:0; background:var(--bg-elevated); border:1px solid var(--border); border-radius:8px;
+    color:var(--text-primary); padding:10px 10px; font-size:13px; font-family:'Inter',sans-serif;
+  }
+  .search-row input#tmKeyword{flex:1.3;}
+  .search-row input#tmCity{flex:1;}
+
+  /* rankings */
+  .rank-row{
+    display:flex; align-items:center; gap:12px;
+    padding:12px 0; border-bottom:1px solid var(--border);
+  }
+  .rank-row:last-child{border-bottom:none;}
+  .rank-num{font-family:'Anton',sans-serif; font-size:20px; color:var(--text-faint); width:28px; flex:0 0 auto;}
+  .rank-info{flex:1; min-width:0;}
+  .rank-info .name{font-size:14px; font-weight:700;}
+  .rank-info .sub{font-size:10.5px; color:var(--text-muted); font-family:'Space Mono',monospace;}
+  .rank-score{font-family:'Space Mono',monospace; font-weight:700; color:var(--magenta); font-size:15px;}
+
+  /* compare */
+  .user-row{
+    display:flex; align-items:center; gap:12px; padding:12px 14px;
+    background:var(--bg-elevated); border-radius:10px; margin-bottom:10px; border:1px solid var(--border);
+  }
+  .avatar{
+    width:36px; height:36px; border-radius:50%; flex:0 0 auto;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Anton',sans-serif; font-size:14px; color:#0F0C14;
+  }
+  .user-row .u-info{flex:1;}
+  .user-row .u-info .name{font-size:13px; font-weight:700;}
+  .user-row .u-info .sub{font-size:10.5px; color:var(--text-muted); font-family:'Space Mono',monospace;}
+  .you-badge{font-size:9px; font-family:'Space Mono',monospace; background:var(--magenta); color:#fff; padding:2px 6px; border-radius:4px;}
+
+  /* empty state */
+  .empty{
+    text-align:center; padding:50px 20px; color:var(--text-muted);
+  }
+  .empty .display{font-size:20px; color:var(--text-faint); margin-bottom:8px;}
+  .empty p{font-size:12px; line-height:1.6;}
+
+  /* FAB */
+  .fab{
+    position:absolute; right:16px; bottom:86px;
+    width:52px; height:52px; border-radius:50%;
+    background:var(--magenta); color:#fff; border:none;
+    font-size:26px; display:flex; align-items:center; justify-content:center;
+    cursor:pointer; box-shadow:0 6px 18px rgba(255,46,122,0.4);
+    z-index:6;
+  }
+  .fab:hover{background:#ff529a;}
+
+  /* bottom nav */
+  nav.tabbar{
+    position:sticky; bottom:0; left:0; right:0;
+    display:flex; background:var(--bg-surface);
+    border-top:1px solid var(--border);
+    z-index:5;
+  }
+  nav.tabbar button{
+    flex:1; background:none; border:none; color:var(--text-faint);
+    padding:10px 4px 12px; display:flex; flex-direction:column; align-items:center; gap:4px;
+    cursor:pointer; font-family:'Inter',sans-serif; font-size:10px;
+  }
+  nav.tabbar button svg{width:20px; height:20px; stroke:var(--text-faint); fill:none; stroke-width:1.8;}
+  nav.tabbar button.active{color:var(--magenta);}
+  nav.tabbar button.active svg{stroke:var(--magenta);}
+
+  /* modal */
+  .modal-backdrop{
+    position:fixed; inset:0; background:rgba(0,0,0,0.6); display:none;
+    align-items:flex-end; justify-content:center; z-index:20;
+  }
+  .modal-backdrop.active{display:flex;}
+  .modal{
+    width:100%; max-width:var(--shell-width);
+    background:var(--bg-elevated); border-radius:18px 18px 0 0;
+    padding:22px 20px 26px; max-height:85vh; overflow-y:auto;
+  }
+  .modal h2{margin:0 0 16px; font-size:20px;}
+  .field{margin-bottom:14px;}
+  .field label{display:block; font-size:11px; color:var(--text-muted); font-family:'Space Mono',monospace; margin-bottom:6px;}
+  .field input, .field select, .field textarea{
+    width:100%; background:var(--bg-surface); border:1px solid var(--border); border-radius:8px;
+    color:var(--text-primary); padding:10px 12px; font-size:14px; font-family:'Inter',sans-serif;
+  }
+  .field textarea{resize:vertical; min-height:60px;}
+  .field-row{display:flex; gap:10px;}
+  .field-row .field{flex:1;}
+  .range-wrap{display:flex; align-items:center; gap:12px;}
+  .range-wrap input[type=range]{flex:1; accent-color:var(--magenta);}
+  .range-val{font-family:'Space Mono',monospace; font-weight:700; color:var(--magenta); width:32px; text-align:center;}
+  .modal-actions{display:flex; gap:10px; margin-top:18px;}
+  .btn-secondary, .btn-primary{
+    flex:1; border-radius:8px; padding:12px; font-size:13px; font-weight:600; cursor:pointer; border:none;
+  }
+  .btn-secondary{background:var(--bg-surface); color:var(--text-muted); border:1px solid var(--border);}
+  .btn-primary{background:var(--magenta); color:#fff;}
+  .btn-primary:hover{background:#ff529a;}
+
+  ::-webkit-scrollbar{width:0; height:0;}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <header class="topbar">
+    <div>
+      <div class="wordmark display">Concert<span>List</span></div>
+      <div class="tagline" id="topTag">EVERY SET, LOGGED &amp; SCORED</div>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- MY CONCERTS -->
+    <section class="screen active" id="screen-mine">
+      <div class="section-head">
+        <div>
+          <h1 class="display">My Sets</h1>
+          <p id="mineCount">— shows logged</p>
+        </div>
+      </div>
+      <div class="controls" id="sortControls">
+        <button class="chip active" data-sort="date">LATEST FIRST</button>
+        <button class="chip" data-sort="score">TOP RATED</button>
+        <button class="chip" data-sort="artist">A–Z</button>
+      </div>
+      <div id="mineList"></div>
+    </section>
+
+    <!-- RANKINGS -->
+    <section class="screen" id="screen-rankings">
+      <div class="section-head">
+        <div>
+          <h1 class="display">Top Artists</h1>
+          <p>RANKED BY YOUR AVERAGE SCORE</p>
+        </div>
+      </div>
+      <div id="rankList"></div>
+    </section>
+
+    <!-- DISCOVER -->
+    <section class="screen" id="screen-discover">
+      <div class="section-head">
+        <div>
+          <h1 class="display">Discover</h1>
+          <p>LIVE SEARCH · TICKETMASTER</p>
+        </div>
+      </div>
+
+      <div id="originWarning"></div>
+
+      <div class="api-box">
+        <label>YOUR TICKETMASTER API KEY</label>
+        <div class="api-row">
+          <input type="text" id="tmKey" placeholder="Paste your free API key">
+          <button class="chip-btn" id="tmSaveKey">Save</button>
+        </div>
+        <p class="api-hint" id="apiHint">Get a free key at <a href="https://developer.ticketmaster.com/" target="_blank" rel="noopener">developer.ticketmaster.com</a> — saved only in this browser (localStorage), sent only to Ticketmaster. <a href="#" id="tmForgetKey">Forget key</a></p>
+      </div>
+
+      <div class="search-row">
+        <input type="text" id="tmKeyword" placeholder="Artist, e.g. Bicep">
+        <input type="text" id="tmCity" placeholder="City (optional)">
+        <button class="chip-btn" id="tmSearchBtn">Search</button>
+      </div>
+
+      <div id="discoverList"></div>
+    </section>
+
+    <!-- COMPARE -->
+    <section class="screen" id="screen-compare">
+      <div class="section-head">
+        <div>
+          <h1 class="display">Compare</h1>
+          <p>MOST SETS LOGGED THIS YEAR</p>
+        </div>
+      </div>
+      <div id="compareList"></div>
+    </section>
+
+  </main>
+
+  <button class="fab" id="fabAdd" title="Log a show">+</button>
+
+  <nav class="tabbar">
+    <button class="tab-btn active" data-screen="mine">
+      <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+      MY SETS
+    </button>
+    <button class="tab-btn" data-screen="rankings">
+      <svg viewBox="0 0 24 24"><path d="M8 20V10M14 20V4M20 20v-7M2 20h20"/></svg>
+      RANKINGS
+    </button>
+    <button class="tab-btn" data-screen="discover">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      DISCOVER
+    </button>
+    <button class="tab-btn" data-screen="compare">
+      <svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M2 20c0-3 3-5 7-5s7 2 7 5"/><circle cx="17" cy="8" r="2.5"/><path d="M16 15c2.5.3 4.5 1.8 5 4"/></svg>
+      COMPARE
+    </button>
+  </nav>
+
+  <!-- ADD CONCERT MODAL -->
+  <div class="modal-backdrop" id="modalBackdrop">
+    <div class="modal">
+      <h2 class="display">Log a Show</h2>
+
+      <div class="api-box">
+        <label>SEARCH A PAST SHOW (SETLIST.FM)</label>
+        <div class="api-row">
+          <input type="text" id="slKey" placeholder="Free API key">
+          <button class="chip-btn" id="slSaveKey">Save</button>
+        </div>
+        <p class="api-hint" id="slHint">Free at <a href="https://api.setlist.fm/docs/1.0/index.html" target="_blank" rel="noopener">setlist.fm — request a key</a>, saved only in this browser. <a href="#" id="slForgetKey">Forget</a></p>
+        <div class="search-row" style="margin-top:10px; margin-bottom:0;">
+          <input type="text" id="slArtist" placeholder="Artist">
+          <input type="text" id="slYear" placeholder="Year" style="flex:0 0 80px;">
+          <button class="chip-btn" id="slSearchBtn">Find</button>
+        </div>
+        <div id="slResults"></div>
+      </div>
+
+      <div class="field">
+        <label>ARTIST</label>
+        <input type="text" id="f-artist" placeholder="e.g. Overmono">
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>VENUE</label>
+          <input type="text" id="f-venue" placeholder="e.g. Brooklyn Steel">
+        </div>
+        <div class="field">
+          <label>DATE</label>
+          <input type="date" id="f-date">
+        </div>
+      </div>
+      <div class="field">
+        <label>GENRE</label>
+        <select id="f-genre">
+          <option>Techno</option>
+          <option>House</option>
+          <option>Electronic</option>
+          <option>Downtempo</option>
+          <option>Bass</option>
+          <option>Indie</option>
+          <option>Hip-Hop</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>YOUR SCORE</label>
+        <div class="range-wrap">
+          <input type="range" id="f-score" min="1" max="10" value="8" step="1">
+          <div class="range-val" id="f-score-val">8</div>
+        </div>
+      </div>
+      <div class="field">
+        <label>NOTES (OPTIONAL)</label>
+        <textarea id="f-notes" placeholder="How was the sound, the crowd, the setlist..."></textarea>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-secondary" id="cancelAdd">Cancel</button>
+        <button class="btn-primary" id="saveAdd">Save show</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ---------- Mock data ----------
+let concerts = [
+  {artist:"Jamie xx", venue:"Knockdown Center, NYC", date:"2025-09-06", genre:"Electronic", score:9.5, notes:"Sound system was unreal. Danced for 4 hours straight."},
+  {artist:"Bicep", venue:"Brooklyn Mirage, NYC", date:"2025-08-14", genre:"Techno", score:9.2, notes:""},
+  {artist:"Overmono", venue:"Brooklyn Steel, NYC", date:"2025-03-01", genre:"Bass", score:9.0, notes:"Best bass drops of the year."},
+  {artist:"Four Tet", venue:"Red Rocks, CO", date:"2024-09-10", genre:"Electronic", score:8.9, notes:""},
+  {artist:"Fred again..", venue:"Terminal 5, NYC", date:"2024-11-02", genre:"House", score:8.7, notes:"Crowd energy was insane."},
+  {artist:"Peggy Gou", venue:"Governors Ball, NYC", date:"2024-06-08", genre:"House", score:8.0, notes:""},
+  {artist:"Bonobo", venue:"Radio City Music Hall, NYC", date:"2024-06-20", genre:"Downtempo", score:7.5, notes:""},
+  {artist:"Charlotte de Witte", venue:"Basement, Brooklyn", date:"2023-10-28", genre:"Techno", score:6.5, notes:"Great DJ, rough venue sound."},
+];
+
+// Real, verified tour dates (checked Jul 2026 via Ticketmaster / Songkick / Music Festival Wizard)
+// Kept as reference — Discover now pulls live results directly from Ticketmaster instead.
+
+const community = [
+  {name:"mira_beats", count:63, avg:8.1, color:"#FF2E7A"},
+  {name:"you", count:concerts.length, avg:0, color:"#3EC6E0", isYou:true},
+  {name:"jrave_nyc", count:41, avg:7.6, color:"#FFB627"},
+  {name:"deep_house_dan", count:35, avg:8.4, color:"#FF2E7A"},
+  {name:"lowend_lena", count:22, avg:7.9, color:"#3EC6E0"},
+];
+
+// ---------- Helpers ----------
+function fmtDate(d){
+  const dt = new Date(d + "T00:00:00");
+  return dt.toLocaleDateString('en-US',{month:'short', day:'numeric', year:'numeric'});
+}
+function scoreClass(s){
+  if(s >= 8) return 'score-high';
+  if(s >= 6) return 'score-mid';
+  return 'score-low';
+}
+function escAttr(str){
+  return String(str).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ---------- Render: My Sets ----------
+let currentSort = 'date';
+
+function renderMine(){
+  const list = document.getElementById('mineList');
+  const countEl = document.getElementById('mineCount');
+  countEl.textContent = concerts.length + (concerts.length === 1 ? " show logged" : " shows logged");
+
+  if(concerts.length === 0){
+    list.innerHTML = `<div class="empty"><div class="display">No sets yet</div><p>Log your first show with the + button below.<br>Your list starts here.</p></div>`;
+    return;
+  }
+
+  let sorted = [...concerts];
+  if(currentSort === 'date') sorted.sort((a,b)=> new Date(b.date) - new Date(a.date));
+  if(currentSort === 'score') sorted.sort((a,b)=> b.score - a.score);
+  if(currentSort === 'artist') sorted.sort((a,b)=> a.artist.localeCompare(b.artist));
+
+  list.innerHTML = sorted.map(c => `
+    <div class="stub">
+      <div class="stub-main">
+        <div class="artist-row">
+          <div class="artist-avatar" data-artist-avatar="${escAttr(c.artist)}"><span>${escAttr(c.artist.charAt(0).toUpperCase())}</span></div>
+          <div><p class="artist">${c.artist}</p></div>
+        </div>
+        <p class="venue">${c.venue}</p>
+        <div class="meta"><span>${fmtDate(c.date)}</span></div>
+        <span class="genre-tag">${c.genre.toUpperCase()}</span>
+      </div>
+      <div class="perf"></div>
+      <div class="stub-stamp">
+        <div class="stamp ${scoreClass(c.score)}">
+          <div class="score">${c.score.toFixed(1)}</div>
+          <div class="max">/10</div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+  hydrateArtistAvatars();
+}
+
+document.getElementById('sortControls').addEventListener('click', (e)=>{
+  const btn = e.target.closest('.chip');
+  if(!btn) return;
+  document.querySelectorAll('#sortControls .chip').forEach(c=>c.classList.remove('active'));
+  btn.classList.add('active');
+  currentSort = btn.dataset.sort;
+  renderMine();
+});
+
+// ---------- Render: Rankings ----------
+function renderRankings(){
+  const grouped = {};
+  concerts.forEach(c=>{
+    if(!grouped[c.artist]) grouped[c.artist] = {scores:[], count:0};
+    grouped[c.artist].scores.push(c.score);
+    grouped[c.artist].count++;
+  });
+  const arr = Object.entries(grouped).map(([artist, d])=>({
+    artist,
+    count:d.count,
+    avg: d.scores.reduce((a,b)=>a+b,0) / d.scores.length
+  })).sort((a,b)=> b.avg - a.avg);
+
+  const list = document.getElementById('rankList');
+  if(arr.length === 0){
+    list.innerHTML = `<div class="empty"><div class="display">Nothing ranked yet</div><p>Log a few shows and your top artists will show up here.</p></div>`;
+    return;
+  }
+  list.innerHTML = arr.map((a,i)=>`
+    <div class="rank-row">
+      <div class="rank-num">${String(i+1).padStart(2,'0')}</div>
+      <div class="artist-avatar" data-artist-avatar="${escAttr(a.artist)}"><span>${escAttr(a.artist.charAt(0).toUpperCase())}</span></div>
+      <div class="rank-info">
+        <div class="name">${a.artist}</div>
+        <div class="sub">${a.count} SET${a.count>1?'S':''} SEEN</div>
+      </div>
+      <div class="rank-score">${a.avg.toFixed(1)}</div>
+    </div>
+  `).join('');
+  hydrateArtistAvatars();
+}
+
+// ---------- Artist photos (iTunes Search API — no key, no auth, works instantly) ----------
+const artistImageCache = {};
+
+async function getArtistImage(name){
+  const key = name.trim().toLowerCase();
+  if(key in artistImageCache) return artistImageCache[key];
+  try{
+    const res = await fetch('https://itunes.apple.com/search?media=music&limit=5&term=' + encodeURIComponent(name));
+    if(!res.ok){ artistImageCache[key] = null; return null; }
+    const data = await res.json();
+    const results = data.results || [];
+    // Prefer an exact artist-name match among results; fall back to the top hit.
+    const match = results.find(r => r.artistName && r.artistName.trim().toLowerCase() === key) || results[0];
+    let url = match && match.artworkUrl100 ? match.artworkUrl100 : null;
+    if(url) url = url.replace('100x100', '300x300'); // request a sharper image than the tiny default thumbnail
+    artistImageCache[key] = url;
+    return url;
+  }catch(e){
+    console.error('Artist image fetch failed for', name, e);
+    artistImageCache[key] = null;
+    return null;
+  }
+}
+
+async function hydrateArtistAvatars(){
+  const nodes = Array.from(document.querySelectorAll('[data-artist-avatar]'));
+  if(nodes.length === 0) return;
+  const names = [...new Set(nodes.map(n => n.getAttribute('data-artist-avatar')))];
+  for(const name of names){
+    const url = await getArtistImage(name);
+    if(!url) continue;
+    nodes.forEach(n=>{
+      if(n.getAttribute('data-artist-avatar') === name){
+        n.innerHTML = `<img src="${url}" alt="" loading="lazy">`;
+      }
+    });
+  }
+}
+
+// ---------- Discover: live Ticketmaster search ----------
+let tmApiKey = '';
+const TM_KEY_STORAGE = 'concertlist_tm_api_key';
+
+function loadSavedKey(){
+  try{
+    const saved = window.localStorage.getItem(TM_KEY_STORAGE);
+    if(saved){
+      tmApiKey = saved;
+      document.getElementById('tmKey').value = saved;
+    }
+  }catch(_e){
+    // localStorage unavailable (e.g. sandboxed preview) — fall back to in-memory only, no error shown to user
+  }
+}
+
+function updateApiHint(){
+  const hint = document.getElementById('apiHint');
+  const forgetLink = '<a href="#" id="tmForgetKey">Forget key</a>';
+  if(tmApiKey){
+    hint.innerHTML = 'Connected and saved in this browser — no need to paste it again next time. ' + forgetLink;
+  } else {
+    hint.innerHTML = 'Get a free key at <a href="https://developer.ticketmaster.com/" target="_blank" rel="noopener">developer.ticketmaster.com</a> — saved only in this browser (localStorage), sent only to Ticketmaster. ' + forgetLink;
+  }
+  document.getElementById('tmForgetKey').addEventListener('click', (e)=>{
+    e.preventDefault();
+    tmApiKey = '';
+    document.getElementById('tmKey').value = '';
+    try{ window.localStorage.removeItem(TM_KEY_STORAGE); }catch(_e){}
+    updateApiHint();
+    renderDiscover();
+  });
+}
+
+document.getElementById('tmSaveKey').addEventListener('click', ()=>{
+  tmApiKey = document.getElementById('tmKey').value.trim();
+  try{ window.localStorage.setItem(TM_KEY_STORAGE, tmApiKey); }catch(_e){}
+  updateApiHint();
+  if(tmApiKey) runLiveSearch();
+});
+
+document.getElementById('tmSearchBtn').addEventListener('click', ()=> runLiveSearch());
+document.getElementById('tmCity').addEventListener('keydown', (e)=>{ if(e.key === 'Enter') runLiveSearch(); });
+document.getElementById('tmKeyword').addEventListener('keydown', (e)=>{ if(e.key === 'Enter') runLiveSearch(); });
+
+function renderDiscover(){
+  // Initial state before any search: curated, verified-by-hand sample so the page isn't empty.
+  const list = document.getElementById('discoverList');
+  list.innerHTML = `<div class="empty"><div class="display">Search for a show</div>
+    <p>Add your API key above, then search an artist or city to pull real, live listings from Ticketmaster.</p></div>`;
+}
+
+async function runLiveSearch(){
+  const list = document.getElementById('discoverList');
+
+  if(!tmApiKey){
+    list.innerHTML = `<div class="empty"><div class="display">Add your API key</div><p>Paste a free Ticketmaster API key above to search live shows.</p></div>`;
+    return;
+  }
+
+  const keyword = document.getElementById('tmKeyword').value.trim();
+  const city = document.getElementById('tmCity').value.trim();
+
+  list.innerHTML = `<div class="empty"><p>Searching live listings…</p></div>`;
+
+  const params = new URLSearchParams({
+    apikey: tmApiKey,
+    classificationName: 'music',
+    size: '20',
+    sort: 'date,asc'
+  });
+  if(keyword) params.set('keyword', keyword);
+  if(city) params.set('city', city);
+
+  try{
+    const res = await fetch('https://app.ticketmaster.com/discovery/v2/events.json?' + params.toString());
+    if(!res.ok){
+      let message = 'Request failed — HTTP ' + res.status;
+      try{
+        const err = await res.json();
+        if(err && err.fault && err.fault.faultstring){
+          message = err.fault.faultstring + ' (HTTP ' + res.status + ')';
+        }
+      }catch(_e){}
+      if(res.status === 401){
+        message = 'Invalid API key (HTTP 401). Double-check it was copied with no extra spaces, and that the key shows as active in your Ticketmaster developer dashboard.';
+      } else if(res.status === 429){
+        message = 'Rate limit hit (HTTP 429). Your key\'s daily quota (5,000 calls) or per-second limit (5/sec) was exceeded — wait a moment and try again.';
+      }
+      throw new Error(message);
+    }
+    const data = await res.json();
+    const events = (data._embedded && data._embedded.events) || [];
+
+    if(events.length === 0){
+      list.innerHTML = `<div class="empty"><div class="display">No shows found</div><p>Try a different artist or city.</p></div>`;
+      return;
+    }
+
+    list.innerHTML = events.map(ev=>{
+      const venue = ev._embedded && ev._embedded.venues && ev._embedded.venues[0];
+      const cityName = venue && venue.city && venue.city.name;
+      const venueName = venue ? (venue.name + (cityName ? ', ' + cityName : '')) : 'Venue TBA';
+      const localDate = ev.dates && ev.dates.start && ev.dates.start.localDate;
+      const dateStr = localDate ? fmtDate(localDate) : 'Date TBA';
+      const priceRange = ev.priceRanges && ev.priceRanges[0];
+      const priceText = priceRange ? ('from $' + Math.round(priceRange.min)) : 'See pricing on site';
+      const attraction = ev._embedded && ev._embedded.attractions && ev._embedded.attractions[0];
+      const artistName = attraction ? attraction.name : ev.name;
+      return `
+        <div class="show-card">
+          <div class="artist-avatar" data-artist-avatar="${escAttr(artistName)}"><span>${escAttr(artistName.charAt(0).toUpperCase())}</span></div>
+          <div class="info">
+            <p class="artist">${ev.name}</p>
+            <div class="details">${venueName}<br>${dateStr}</div>
+            <div class="price">${priceText}</div>
+          </div>
+          <a class="buy-btn" href="${ev.url}" target="_blank" rel="noopener" style="text-decoration:none;">Get tickets</a>
+        </div>
+      `;
+    }).join('');
+    hydrateArtistAvatars();
+  } catch(e){
+    console.error('Ticketmaster search error:', e);
+    const isNetworkErr = e instanceof TypeError;
+    let detail = e.message;
+    if(isNetworkErr){
+      const inSandboxedFrame = (window.self !== window.top);
+      detail = inSandboxedFrame
+        ? 'This looks like a sandboxed preview (e.g. a chat/document preview pane) blocking outbound requests. Download this HTML file and open it directly in a normal browser tab — the live search will work there.'
+        : 'Network error reaching Ticketmaster. Check your internet connection, or a browser extension (ad blocker/privacy tool) may be blocking the request — try disabling it for this page and search again.';
+    }
+    list.innerHTML = `<div class="empty"><div class="display">Search failed</div><p>${detail}</p></div>`;
+  }
+}
+
+// ---------- Render: Compare ----------
+function renderCompare(){
+  const you = community.find(u=>u.isYou);
+  you.count = concerts.length;
+  you.avg = concerts.length ? concerts.reduce((a,c)=>a+c.score,0)/concerts.length : 0;
+
+  const sorted = [...community].sort((a,b)=> b.count - a.count);
+  const list = document.getElementById('compareList');
+  list.innerHTML = sorted.map(u=>`
+    <div class="user-row">
+      <div class="avatar" style="background:${u.color}">${u.name.charAt(0).toUpperCase()}</div>
+      <div class="u-info">
+        <div class="name">${u.name} ${u.isYou ? '<span class="you-badge">YOU</span>' : ''}</div>
+        <div class="sub">${u.count} shows &middot; avg ${u.avg.toFixed(1)}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ---------- Nav ----------
+const topTags = {
+  mine: "EVERY SET, LOGGED & SCORED",
+  rankings: "WHO YOU RATE THE HIGHEST",
+  discover: "LIVE SEARCH · TICKETMASTER",
+  compare: "SEE WHO'S OUT THE MOST"
+};
+
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+    btn.classList.add('active');
+    const target = btn.dataset.screen;
+    document.getElementById('screen-' + target).classList.add('active');
+    document.getElementById('topTag').textContent = topTags[target];
+  });
+});
+
+// ---------- Search a past show (setlist.fm) ----------
+let slApiKey = '';
+const SL_KEY_STORAGE = 'concertlist_setlistfm_api_key';
+
+function loadSavedSetlistKey(){
+  try{
+    const k = window.localStorage.getItem(SL_KEY_STORAGE);
+    if(k){ slApiKey = k; document.getElementById('slKey').value = k; }
+  }catch(_e){}
+}
+
+function updateSetlistHint(){
+  const hint = document.getElementById('slHint');
+  const forgetLink = '<a href="#" id="slForgetKey">Forget</a>';
+  hint.innerHTML = (slApiKey
+    ? 'Connected. '
+    : 'Free at <a href="https://api.setlist.fm/docs/1.0/index.html" target="_blank" rel="noopener">setlist.fm</a> — request a key, saved only in this browser. '
+  ) + forgetLink;
+  document.getElementById('slForgetKey').addEventListener('click', (e)=>{
+    e.preventDefault();
+    slApiKey = '';
+    document.getElementById('slKey').value = '';
+    try{ window.localStorage.removeItem(SL_KEY_STORAGE); }catch(_e){}
+    updateSetlistHint();
+  });
+}
+
+document.getElementById('slSaveKey').addEventListener('click', ()=>{
+  slApiKey = document.getElementById('slKey').value.trim();
+  try{ window.localStorage.setItem(SL_KEY_STORAGE, slApiKey); }catch(_e){}
+  updateSetlistHint();
+});
+
+document.getElementById('slSearchBtn').addEventListener('click', ()=> searchPastShows());
+document.getElementById('slArtist').addEventListener('keydown', (e)=>{ if(e.key === 'Enter') searchPastShows(); });
+document.getElementById('slYear').addEventListener('keydown', (e)=>{ if(e.key === 'Enter') searchPastShows(); });
+
+function ddmmyyyyToIso(d){
+  const parts = d.split('-'); // setlist.fm returns dd-MM-yyyy
+  return parts[2] + '-' + parts[1] + '-' + parts[0];
+}
+
+async function searchPastShows(){
+  const results = document.getElementById('slResults');
+  const artist = document.getElementById('slArtist').value.trim();
+
+  if(!slApiKey){
+    results.innerHTML = `<div class="sl-result" style="cursor:default;">Add your free setlist.fm API key above first.</div>`;
+    return;
+  }
+  if(!artist){
+    results.innerHTML = `<div class="sl-result" style="cursor:default;">Enter an artist name to search.</div>`;
+    return;
+  }
+
+  const year = document.getElementById('slYear').value.trim();
+  results.innerHTML = `<div class="sl-result" style="cursor:default;">Searching…</div>`;
+
+  const params = new URLSearchParams({ artistName: artist, p: '1' });
+  if(year) params.set('year', year);
+
+  try{
+    const res = await fetch('https://api.setlist.fm/rest/1.0/search/setlists?' + params.toString(), {
+      headers: { 'Accept': 'application/json', 'x-api-key': slApiKey }
+    });
+    if(!res.ok){
+      let msg = 'Search failed (HTTP ' + res.status + ')';
+      if(res.status === 404) msg = 'No shows found for that artist/year — try a different spelling or drop the year.';
+      if(res.status === 401 || res.status === 403) msg = 'Key rejected (HTTP ' + res.status + '). Double-check it was copied correctly.';
+      results.innerHTML = `<div class="sl-result" style="cursor:default;">${escAttr(msg)}</div>`;
+      return;
+    }
+    const data = await res.json();
+    const setlists = data.setlist || [];
+    if(setlists.length === 0){
+      results.innerHTML = `<div class="sl-result" style="cursor:default;">No shows found. Try a different year or check the spelling.</div>`;
+      return;
+    }
+    results.innerHTML = setlists.slice(0, 8).map((s, i)=>{
+      const venueName = s.venue ? s.venue.name : 'Unknown venue';
+      const cityName = s.venue && s.venue.city ? s.venue.city.name : '';
+      const iso = ddmmyyyyToIso(s.eventDate);
+      return `<div class="sl-result" data-idx="${i}">
+        <div>${escAttr(s.artist ? s.artist.name : artist)} — ${escAttr(venueName)}${cityName ? ', ' + escAttr(cityName) : ''}</div>
+        <div class="sl-date">${fmtDate(iso)}</div>
+      </div>`;
+    }).join('');
+    results.querySelectorAll('.sl-result[data-idx]').forEach(el=>{
+      el.addEventListener('click', ()=>{
+        const idx = parseInt(el.getAttribute('data-idx'), 10);
+        const s = setlists[idx];
+        const venueName = s.venue ? s.venue.name : '';
+        const cityName = s.venue && s.venue.city ? s.venue.city.name : '';
+        document.getElementById('f-artist').value = s.artist ? s.artist.name : artist;
+        document.getElementById('f-venue').value = venueName + (cityName ? ', ' + cityName : '');
+        document.getElementById('f-date').value = ddmmyyyyToIso(s.eventDate);
+        results.innerHTML = `<div class="sl-result" style="cursor:default;">Filled in below — set genre, score, and notes, then save.</div>`;
+      });
+    });
+  }catch(e){
+    console.error('setlist.fm search error:', e);
+    const isNetworkErr = e instanceof TypeError;
+    const msg = isNetworkErr
+      ? 'Blocked by CORS/network — setlist.fm often refuses direct browser requests (same class of issue as Spotify earlier). You can still fill the fields in manually below.'
+      : e.message;
+    results.innerHTML = `<div class="sl-result" style="cursor:default;">${escAttr(msg)}</div>`;
+  }
+}
+
+// ---------- Add concert modal ----------
+const backdrop = document.getElementById('modalBackdrop');
+document.getElementById('fabAdd').addEventListener('click', ()=>{
+  document.getElementById('f-date').value = new Date().toISOString().slice(0,10);
+  document.getElementById('slArtist').value = '';
+  document.getElementById('slYear').value = '';
+  document.getElementById('slResults').innerHTML = '';
+  backdrop.classList.add('active');
+});
+document.getElementById('cancelAdd').addEventListener('click', ()=> backdrop.classList.remove('active'));
+backdrop.addEventListener('click', (e)=>{ if(e.target === backdrop) backdrop.classList.remove('active'); });
+
+const scoreRange = document.getElementById('f-score');
+const scoreVal = document.getElementById('f-score-val');
+scoreRange.addEventListener('input', ()=> scoreVal.textContent = scoreRange.value);
+
+document.getElementById('saveAdd').addEventListener('click', ()=>{
+  const artist = document.getElementById('f-artist').value.trim();
+  const venue = document.getElementById('f-venue').value.trim();
+  const date = document.getElementById('f-date').value;
+  const genre = document.getElementById('f-genre').value;
+  const score = parseFloat(scoreRange.value);
+  const notes = document.getElementById('f-notes').value.trim();
+
+  if(!artist || !venue || !date){
+    alert("Add an artist, venue, and date before saving.");
+    return;
+  }
+
+  concerts.push({artist, venue, date, genre, score, notes});
+
+  document.getElementById('f-artist').value = '';
+  document.getElementById('f-venue').value = '';
+  document.getElementById('f-notes').value = '';
+  scoreRange.value = 8;
+  scoreVal.textContent = 8;
+  backdrop.classList.remove('active');
+
+  renderMine();
+  renderRankings();
+  renderCompare();
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelector('.tab-btn[data-screen="mine"]').classList.add('active');
+  document.getElementById('screen-mine').classList.add('active');
+});
+
+// ---------- Init ----------
+if(window.location.protocol === 'file:'){
+  document.getElementById('originWarning').innerHTML =
+    '<div class="origin-warning">Opened directly from disk — external APIs (Ticketmaster, artist photos) will fail here. ' +
+    'Run <code>python3 -m http.server 8000</code> in this file\'s folder, then open ' +
+    '<code>http://localhost:8000</code> instead. See local-testing-setup.md for details.</div>';
+}
+loadSavedKey();
+updateApiHint();
+loadSavedSetlistKey();
+updateSetlistHint();
+renderMine();
+renderRankings();
+renderDiscover();
+renderCompare();
+</script>
+</body>
+</html>
