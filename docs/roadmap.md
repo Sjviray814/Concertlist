@@ -1,6 +1,6 @@
 # ConcertList — Roadmap to Production
 
-**Where we are today:** a single-file HTML/CSS/JS prototype with an app-shell UI (My Sets, Rankings, Discover, Compare), in-memory mock data, and a working client-side Ticketmaster Discovery API search. No backend, no accounts, no persistence.
+**Where we are today:** a real Next.js + Supabase app (see repo root) with accounts, a Postgres database, row-level security, and server-proxied Ticketmaster search. The original single-file prototype is kept for reference at `legacy/prototype.html`. **You still need to create your own Supabase project and run `supabase/schema.sql` against it, then fill in `.env.local` — see the root [README](../README.md) — before this runs for real.**
 
 This doc lays out everything between here and a real product with real users, in rough build order. Not every box needs to be checked before you launch — see the "MVP cutline" notes marking what's truly required for a v1 launch vs. what can wait.
 
@@ -23,11 +23,11 @@ This doc lays out everything between here and a real product with real users, in
 
 **MVP cutline: all required.**
 
-- [ ] Set up a proper project repo (git + GitHub), not a single HTML file
-- [ ] Scaffold the chosen framework (e.g. `npx create-next-app`)
-- [ ] Port existing UI (My Sets, Rankings, Discover, Compare, ticket-stub card design, tab bar, modal) into components
-- [ ] Set up environment variables (`.env`) for secrets — Ticketmaster key, DB credentials, etc. (never commit these)
-- [ ] Set up local dev workflow (linting, formatting, a README for yourself)
+- [x] Set up a proper project repo (git + GitHub), not a single HTML file
+- [x] Scaffold the chosen framework (e.g. `npx create-next-app`) — Next.js (App Router, TypeScript, Tailwind)
+- [x] Port existing UI (My Sets, Rankings, Discover, Compare, ticket-stub card design, tab bar, modal) into components
+- [x] Set up environment variables (`.env`) for secrets — Ticketmaster key, DB credentials, etc. (never commit these)
+- [x] Set up local dev workflow (linting, a README for yourself) — ESLint via create-next-app; no Prettier config yet
 
 ---
 
@@ -35,17 +35,17 @@ This doc lays out everything between here and a real product with real users, in
 
 **MVP cutline: all required — this is what makes it a "real app" instead of a demo.**
 
-- [ ] Design the database schema:
-  - `users` (id, email, username, display name, avatar, created_at)
-  - `concerts` (id, user_id, artist, venue, city, date, genre, score, notes, created_at)
+- [x] Design the database schema — see `supabase/schema.sql`:
+  - `profiles` (id, username, display_name, avatar_url, created_at) — auto-created per user via a trigger on `auth.users`
+  - `concerts` (id, user_id, artist, venue, date, genre, score, notes, created_at), with row-level security so users can only edit/delete their own
   - Optional later: `follows`/`friends`, `comments`, `likes`
-- [ ] Set up the database (Postgres via Supabase, or equivalent)
-- [ ] Build the API layer (REST or Supabase's auto-generated API) for:
-  - [ ] Create / read / update / delete a concert entry
-  - [ ] Fetch a user's full concert list (with sort/filter params)
-  - [ ] Compute artist rankings server-side (or client-side from fetched data)
-  - [ ] Fetch community/compare data (other users' stats)
-- [ ] Replace all mock JS arrays in the current prototype with real API calls
+- [ ] Set up the database (Postgres via Supabase, or equivalent) — schema is written and ready in `supabase/schema.sql`, but **you still need to create the actual Supabase project and run it**
+- [x] Build the API layer (REST or Supabase's auto-generated API) for:
+  - [x] Create / read / update / delete a concert entry
+  - [x] Fetch a user's full concert list (with sort/filter params)
+  - [x] Compute artist rankings server-side (or client-side from fetched data)
+  - [x] Fetch community/compare data (other users' stats) — via the `leaderboard` SQL view
+- [x] Replace all mock JS arrays in the current prototype with real API calls
 
 ---
 
@@ -53,11 +53,11 @@ This doc lays out everything between here and a real product with real users, in
 
 **MVP cutline: required — Compare/social features are meaningless without real accounts.**
 
-- [ ] Add sign-up / log-in (email+password, or "continue with Google/Apple" for lower friction)
-- [ ] Add session handling (Supabase Auth / NextAuth / Firebase Auth all handle this for you)
-- [ ] Build a basic profile screen (username, avatar, bio, join date)
-- [ ] Gate "My Sets" and "Compare" behind login; allow "Discover" to work logged-out
-- [ ] Add password reset / email verification flow
+- [x] Add sign-up / log-in — email+password via Supabase Auth (no Google/Apple yet)
+- [x] Add session handling (Supabase Auth / NextAuth / Firebase Auth all handle this for you)
+- [ ] Build a basic profile screen (username, avatar, bio, join date) — only a read-only username shows in the header so far
+- [x] Gate "My Sets" and "Compare" behind login; allow "Discover" to work logged-out
+- [ ] Add password reset / email verification flow — Supabase's default email-confirmation-on-signup flow is wired up (`/auth/callback`); no "forgot password" page yet
 - [ ] Write and link a Privacy Policy and Terms of Service (required once you store real user data — use a generator like Termly as a starting point, then review it yourself)
 
 ---
@@ -66,9 +66,9 @@ This doc lays out everything between here and a real product with real users, in
 
 **MVP cutline: functional version required; the backend-proxy hardening can follow shortly after.**
 
-- [ ] Move the Ticketmaster API call from client-side `fetch` to a server-side API route (`/api/discover`) so your API key isn't exposed in the browser
-- [ ] Add basic caching (e.g. cache popular searches for a few hours) to stay within Ticketmaster's rate limits (5,000 calls/day on the free tier)
-- [ ] Add graceful fallback UI for rate-limit/error states (already partially built — port it over)
+- [x] Move the Ticketmaster API call from client-side `fetch` to a server-side API route (`/api/discover`) so your API key isn't exposed in the browser
+- [x] Add basic caching (e.g. cache popular searches for a few hours) to stay within Ticketmaster's rate limits (5,000 calls/day on the free tier) — in-memory, 3hr TTL; also added a per-IP rate limit since this route is public
+- [x] Add graceful fallback UI for rate-limit/error states (already partially built — port it over)
 - [ ] Consider a second data source (Bandsintown or Songkick APIs) to fill gaps Ticketmaster misses, especially smaller/underground shows relevant to the rave/electronic scene
 - [ ] Add location-based search (use browser geolocation or let users set a home city)
 
@@ -78,9 +78,9 @@ This doc lays out everything between here and a real product with real users, in
 
 **MVP cutline: first four required; rest can be v1.1+**
 
-- [ ] Edit and delete a logged concert (currently add-only)
-- [ ] Working genre filter on "My Sets" (UI exists, not yet functional)
-- [ ] Real, non-mock "Compare" — pull actual other users' public stats
+- [x] Edit and delete a logged concert (currently add-only)
+- [x] Working genre filter on "My Sets" (UI exists, not yet functional)
+- [x] Real, non-mock "Compare" — pull actual other users' public stats
 - [ ] Basic search/discovery of other users (by username)
 - [ ] Concert photo/ticket-stub image upload (nice signature feature given the ticket-stub design language)
 - [ ] Comments or reactions on other users' logged shows

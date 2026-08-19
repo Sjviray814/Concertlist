@@ -1,0 +1,57 @@
+@import "tailwindcss";
+
+:root {
+  --bg-deep: #0f0c14;
+  --bg-surface: #1a1622;
+  --bg-elevated: #241e2e;
+  --bg-elevated-2: #2c2438;
+  --magenta: #ff2e7a;
+  --amber: #ffb627;
+  --cyan: #3ec6e0;
+  --text-primary: #f5f1f8;
+  --text-muted: #9a8fa8;
+  --text-faint: #6b6178;
+  --border: #332b42;
+  --shell-width: 460px;
+}
+
+@theme inline {
+  --color-bg-deep: var(--bg-deep);
+  --color-bg-surface: var(--bg-surface);
+  --color-bg-elevated: var(--bg-elevated);
+  --color-bg-elevated-2: var(--bg-elevated-2);
+  --color-magenta: var(--magenta);
+  --color-amber: var(--amber);
+  --color-cyan: var(--cyan);
+  --color-text-primary: var(--text-primary);
+  --color-text-muted: var(--text-muted);
+  --color-text-faint: var(--text-faint);
+  --color-border: var(--border);
+  --font-display: var(--font-anton);
+  --font-mono: var(--font-space-mono);
+  --font-sans: var(--font-inter);
+}
+
+body {
+  background: var(--bg-deep);
+  background-image: radial-gradient(circle at 20% 0%, rgba(255, 46, 122, 0.1), transparent 45%),
+    radial-gradient(circle at 85% 15%, rgba(62, 198, 224, 0.08), transparent 40%);
+  color: var(--text-primary);
+  font-family: var(--font-inter), sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.display {
+  font-family: var(--font-anton), sans-serif;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.mono {
+  font-family: var(--font-space-mono), monospace;
+}
+
+::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
