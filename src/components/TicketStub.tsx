@@ -10,7 +10,7 @@ export default function TicketStub({ concert, onClick }: { concert: Concert; onC
   return (
     <div
       onClick={onClick}
-      className="flex bg-bg-elevated rounded-[10px] mb-3.5 overflow-hidden relative border border-border cursor-pointer hover:border-text-faint transition-colors"
+      className="group flex bg-bg-elevated rounded-xl mb-3.5 overflow-hidden relative border border-border/80 cursor-pointer transition-all duration-200 hover:border-text-faint hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,0,0,0.35)] active:translate-y-0 active:scale-[0.995]"
     >
       <div className="flex-1 py-3.5 px-4 min-w-0">
         <div className="flex items-center gap-2.5 mb-2">
@@ -19,7 +19,7 @@ export default function TicketStub({ concert, onClick }: { concert: Concert; onC
         </div>
         <p className="text-xs text-text-muted mb-2">{concert.venue}</p>
         <div className="mono text-[10.5px] text-text-faint">{fmtDate(concert.date)}</div>
-        <span className="mono inline-block mt-2 text-[10px] px-2 py-0.5 rounded bg-bg-elevated-2 text-cyan">
+        <span className="mono inline-block mt-2 text-[10px] px-2 py-0.5 rounded bg-bg-elevated-2 text-cyan border border-cyan/10">
           {concert.genre.toUpperCase()}
         </span>
       </div>
@@ -27,7 +27,7 @@ export default function TicketStub({ concert, onClick }: { concert: Concert; onC
         <div className="absolute w-3.5 h-3.5 bg-bg-surface rounded-full -left-2 -top-1.5" />
         <div className="absolute w-3.5 h-3.5 bg-bg-surface rounded-full -left-2 -bottom-1.5" />
       </div>
-      <div className="flex-none w-19 flex items-center justify-center p-2.5" style={{ width: 76 }}>
+      <div className="flex-none flex items-center justify-center p-2.5" style={{ width: 76 }}>
         <ScoreStamp score={concert.score} />
       </div>
     </div>

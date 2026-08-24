@@ -55,16 +55,23 @@ export default function ConcertFormModal({
     else onClose();
   }
 
+  const inputClass =
+    "w-full bg-bg-surface border border-border rounded-lg px-3 py-2.5 text-sm outline-none transition-all duration-150 focus:border-magenta focus:ring-2 focus:ring-magenta/25";
+
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-end justify-center z-20" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="w-full max-w-[var(--shell-width)] bg-bg-elevated rounded-t-2xl px-5 pt-5 pb-6 max-h-[85vh] overflow-y-auto">
+    <div
+      className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-end justify-center z-20 animate-fade-in"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <div className="w-full max-w-[var(--shell-width)] bg-bg-elevated rounded-t-3xl px-5 pt-5 pb-6 max-h-[85vh] overflow-y-auto border-t border-border/70 shadow-[0_-8px_40px_rgba(0,0,0,0.5)] animate-sheet-in">
+        <div className="w-9 h-1 rounded-full bg-border mx-auto mb-4" />
         <h2 className="display text-xl mb-4">{concert ? "Edit Show" : "Log a Show"}</h2>
 
         {error && <div className="text-xs text-amber bg-amber/10 border border-amber rounded-lg px-3 py-2 mb-3">{error}</div>}
 
         <Field label="ARTIST">
           <input
-            className="w-full bg-bg-surface border border-border rounded-lg px-3 py-2.5 text-sm outline-none focus:border-magenta"
+            className={inputClass}
             value={form.artist}
             onChange={(e) => setForm({ ...form, artist: e.target.value })}
             placeholder="e.g. Overmono"
@@ -73,7 +80,7 @@ export default function ConcertFormModal({
         <div className="flex gap-2.5 mb-3.5">
           <Field label="VENUE" className="flex-1">
             <input
-              className="w-full bg-bg-surface border border-border rounded-lg px-3 py-2.5 text-sm outline-none focus:border-magenta"
+              className={inputClass}
               value={form.venue}
               onChange={(e) => setForm({ ...form, venue: e.target.value })}
               placeholder="e.g. Brooklyn Steel"
@@ -82,7 +89,7 @@ export default function ConcertFormModal({
           <Field label="DATE" className="flex-1">
             <input
               type="date"
-              className="w-full bg-bg-surface border border-border rounded-lg px-3 py-2.5 text-sm outline-none focus:border-magenta"
+              className={inputClass}
               value={form.date}
               onChange={(e) => setForm({ ...form, date: e.target.value })}
             />
@@ -90,7 +97,7 @@ export default function ConcertFormModal({
         </div>
         <Field label="GENRE">
           <select
-            className="w-full bg-bg-surface border border-border rounded-lg px-3 py-2.5 text-sm outline-none focus:border-magenta"
+            className={inputClass}
             value={form.genre}
             onChange={(e) => setForm({ ...form, genre: e.target.value })}
           >
@@ -115,7 +122,7 @@ export default function ConcertFormModal({
         </Field>
         <Field label="NOTES (OPTIONAL)">
           <textarea
-            className="w-full bg-bg-surface border border-border rounded-lg px-3 py-2.5 text-sm outline-none focus:border-magenta min-h-15 resize-y"
+            className={`${inputClass} min-h-15 resize-y`}
             value={form.notes}
             onChange={(e) => setForm({ ...form, notes: e.target.value })}
             placeholder="How was the sound, the crowd, the setlist..."
@@ -126,7 +133,7 @@ export default function ConcertFormModal({
           <button
             disabled={busy}
             onClick={handleDelete}
-            className="w-full border border-magenta text-magenta rounded-lg py-3 text-sm font-semibold mb-2.5 disabled:opacity-50"
+            className="w-full border border-magenta text-magenta rounded-lg py-3 text-sm font-semibold mb-2.5 disabled:opacity-50 transition-all duration-150 hover:bg-magenta/10 active:scale-[0.98]"
           >
             Delete this show
           </button>
@@ -135,14 +142,14 @@ export default function ConcertFormModal({
           <button
             disabled={busy}
             onClick={onClose}
-            className="flex-1 bg-bg-surface border border-border text-text-muted rounded-lg py-3 text-sm font-semibold disabled:opacity-50"
+            className="flex-1 bg-bg-surface border border-border text-text-muted rounded-lg py-3 text-sm font-semibold disabled:opacity-50 transition-all duration-150 hover:text-text-primary active:scale-[0.98]"
           >
             Cancel
           </button>
           <button
             disabled={busy}
             onClick={handleSave}
-            className="flex-1 bg-magenta text-white rounded-lg py-3 text-sm font-semibold disabled:opacity-50 hover:bg-[#ff529a]"
+            className="flex-1 bg-magenta text-white rounded-lg py-3 text-sm font-semibold disabled:opacity-50 transition-all duration-150 hover:bg-[#ff529a] hover:shadow-[0_4px_16px_rgba(255,46,122,0.35)] active:scale-[0.98]"
           >
             {concert ? "Save changes" : "Save show"}
           </button>

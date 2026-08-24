@@ -59,22 +59,29 @@ export default function DiscoverPage() {
           onChange={(e) => setKeyword(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && search()}
           placeholder="Artist, e.g. Bicep"
-          className="flex-[1.3] min-w-0 bg-bg-elevated border border-border rounded-lg px-2.5 py-2.5 text-sm outline-none focus:border-magenta"
+          className="flex-[1.3] min-w-0 bg-bg-elevated border border-border rounded-lg px-2.5 py-2.5 text-sm outline-none transition-all duration-150 focus:border-magenta focus:ring-2 focus:ring-magenta/25"
         />
         <input
           value={city}
           onChange={(e) => setCity(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && search()}
           placeholder="City (optional)"
-          className="flex-1 min-w-0 bg-bg-elevated border border-border rounded-lg px-2.5 py-2.5 text-sm outline-none focus:border-magenta"
+          className="flex-1 min-w-0 bg-bg-elevated border border-border rounded-lg px-2.5 py-2.5 text-sm outline-none transition-all duration-150 focus:border-magenta focus:ring-2 focus:ring-magenta/25"
         />
-        <button onClick={search} className="flex-none bg-cyan text-bg-deep rounded-lg px-3.5 py-2 text-xs font-bold">
+        <button
+          onClick={search}
+          disabled={loading}
+          className="flex-none bg-cyan text-bg-deep rounded-lg px-3.5 py-2 text-xs font-bold transition-all duration-150 hover:bg-[#5fd6ec] active:scale-95 disabled:opacity-60"
+        >
           Search
         </button>
       </div>
 
       {loading && (
-        <div className="text-center py-10 text-text-muted text-xs">Searching live listings…</div>
+        <div className="text-center py-10 text-text-muted text-xs flex flex-col items-center gap-3">
+          <span className="w-5 h-5 rounded-full border-2 border-border border-t-cyan animate-spin" />
+          Searching live listings…
+        </div>
       )}
 
       {!loading && error && (
@@ -109,7 +116,10 @@ export default function DiscoverPage() {
           const artistName = ev._embedded?.attractions?.[0]?.name ?? ev.name;
 
           return (
-            <div key={i} className="flex items-center gap-3 bg-bg-elevated border border-border rounded-xl px-4 py-3.5 mb-3">
+            <div
+              key={i}
+              className="flex items-center gap-3 bg-bg-elevated border border-border rounded-xl px-4 py-3.5 mb-3 transition-all duration-200 hover:-translate-y-0.5 hover:border-text-faint hover:shadow-[0_8px_24px_rgba(0,0,0,0.3)]"
+            >
               <ArtistAvatar name={artistName} />
               <div className="flex-1 min-w-0">
                 <p className="text-[15px] font-bold m-0 mb-0.5">{ev.name}</p>
@@ -124,7 +134,7 @@ export default function DiscoverPage() {
                 href={ev.url}
                 target="_blank"
                 rel="noopener"
-                className="flex-none bg-magenta text-white rounded-full px-4 py-2 text-[11px] font-semibold no-underline"
+                className="flex-none bg-magenta text-white rounded-full px-4 py-2 text-[11px] font-semibold no-underline transition-all duration-150 hover:bg-[#ff529a] hover:shadow-[0_4px_16px_rgba(255,46,122,0.35)] active:scale-95"
               >
                 Get tickets
               </a>

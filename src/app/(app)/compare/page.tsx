@@ -28,9 +28,14 @@ export default async function ComparePage() {
         </div>
       ) : (
         leaderboard.map((row, i) => (
-          <div key={row.user_id} className="flex items-center gap-3 px-3.5 py-3 bg-bg-elevated rounded-xl mb-2.5 border border-border">
+          <div
+            key={row.user_id}
+            className={`flex items-center gap-3 px-3.5 py-3 bg-bg-elevated rounded-xl mb-2.5 border transition-all duration-150 hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(0,0,0,0.3)] ${
+              row.user_id === user!.id ? "border-magenta/40" : "border-border"
+            }`}
+          >
             <div
-              className="w-9 h-9 rounded-full flex-none flex items-center justify-center display text-sm text-bg-deep"
+              className="w-9 h-9 rounded-full flex-none flex items-center justify-center display text-sm text-bg-deep shadow-[0_2px_8px_rgba(0,0,0,0.25)]"
               style={{ background: COLORS[i % COLORS.length] }}
             >
               {(row.display_name || row.username).charAt(0).toUpperCase()}

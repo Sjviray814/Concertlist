@@ -64,8 +64,10 @@ export default function SetsClient({ concerts }: { concerts: Concert[] }) {
           <button
             key={s}
             onClick={() => setSort(s)}
-            className={`mono flex-none text-[11px] px-3 py-1.5 rounded-full border whitespace-nowrap ${
-              sort === s ? "bg-magenta border-magenta text-white" : "bg-bg-elevated border-border text-text-muted"
+            className={`mono flex-none text-[11px] px-3 py-1.5 rounded-full border whitespace-nowrap transition-all duration-150 active:scale-95 ${
+              sort === s
+                ? "bg-magenta border-magenta text-white shadow-[0_2px_10px_rgba(255,46,122,0.35)]"
+                : "bg-bg-elevated border-border text-text-muted hover:border-text-faint hover:text-text-primary"
             }`}
           >
             {s === "date" ? "LATEST FIRST" : s === "score" ? "TOP RATED" : "A–Z"}
@@ -78,8 +80,10 @@ export default function SetsClient({ concerts }: { concerts: Concert[] }) {
           <button
             key={g}
             onClick={() => setGenre(g)}
-            className={`mono flex-none text-[11px] px-3 py-1.5 rounded-full border whitespace-nowrap ${
-              genre === g ? "bg-magenta border-magenta text-white" : "bg-bg-elevated border-border text-text-muted"
+            className={`mono flex-none text-[11px] px-3 py-1.5 rounded-full border whitespace-nowrap transition-all duration-150 active:scale-95 ${
+              genre === g
+                ? "bg-magenta border-magenta text-white shadow-[0_2px_10px_rgba(255,46,122,0.35)]"
+                : "bg-bg-elevated border-border text-text-muted hover:border-text-faint hover:text-text-primary"
             }`}
           >
             {g.toUpperCase()}
@@ -102,12 +106,13 @@ export default function SetsClient({ concerts }: { concerts: Concert[] }) {
 
       <button
         onClick={openAdd}
-        className="fixed w-13 h-13 rounded-full bg-magenta text-white text-2xl flex items-center justify-center shadow-lg z-10"
+        className="fixed rounded-full bg-magenta text-white text-2xl flex items-center justify-center z-10 transition-all duration-200 hover:bg-[#ff529a] hover:scale-105 active:scale-95"
         style={{
           width: 52,
           height: 52,
           bottom: 86,
           right: "calc((100vw - min(100vw, var(--shell-width))) / 2 + 16px)",
+          boxShadow: "0 8px 24px -4px rgba(255, 46, 122, 0.5)",
         }}
         title="Log a show"
       >

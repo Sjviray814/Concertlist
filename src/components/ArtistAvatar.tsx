@@ -41,12 +41,12 @@ export default function ArtistAvatar({ name, size = 36 }: { name: string; size?:
 
   return (
     <div
-      className="rounded-full flex-none overflow-hidden bg-bg-elevated-2 flex items-center justify-center display text-text-muted"
+      className="rounded-full flex-none overflow-hidden bg-bg-elevated-2 flex items-center justify-center display text-text-muted ring-1 ring-border/60"
       style={{ width: size, height: size, fontSize: size * 0.36 }}
     >
       {url ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={url} alt="" className="w-full h-full object-cover" />
+        <img src={url} alt="" className="w-full h-full object-cover animate-fade-in" />
       ) : (
         <span>{name.charAt(0).toUpperCase()}</span>
       )}

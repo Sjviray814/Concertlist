@@ -35,8 +35,13 @@ export default async function RankingsPage() {
         </div>
       ) : (
         ranked.map((a, i) => (
-          <div key={a.artist} className="flex items-center gap-3 py-3 border-b border-border last:border-b-0">
-            <div className="display text-xl text-text-faint w-7 flex-none">{String(i + 1).padStart(2, "0")}</div>
+          <div
+            key={a.artist}
+            className="flex items-center gap-3 py-3 px-2 -mx-2 rounded-lg border-b border-border/70 last:border-b-0 transition-colors duration-150 hover:bg-bg-elevated"
+          >
+            <div className={`display text-xl w-7 flex-none ${i === 0 ? "text-amber" : "text-text-faint"}`}>
+              {String(i + 1).padStart(2, "0")}
+            </div>
             <ArtistAvatar name={a.artist} />
             <div className="flex-1 min-w-0">
               <div className="text-sm font-bold">{a.artist}</div>
