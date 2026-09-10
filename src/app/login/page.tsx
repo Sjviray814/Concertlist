@@ -24,24 +24,35 @@ export default async function LoginPage({
         <input type="hidden" name="next" value={next || "/sets"} />
 
         {error && (
-          <div className="text-xs text-amber bg-amber/10 border border-amber rounded-lg px-3 py-2">{error}</div>
+          <div role="alert" className="text-xs text-amber bg-amber/10 border border-amber rounded-lg px-3 py-2">
+            {error}
+          </div>
         )}
         {notice && (
-          <div className="text-xs text-cyan bg-cyan/10 border border-cyan rounded-lg px-3 py-2">{notice}</div>
+          <div role="status" className="text-xs text-cyan bg-cyan/10 border border-cyan rounded-lg px-3 py-2">
+            {notice}
+          </div>
         )}
 
         <div>
-          <label className="mono block text-xs text-text-muted mb-1.5">EMAIL</label>
+          <label htmlFor="login-email" className="mono block text-xs text-text-muted mb-1.5">
+            EMAIL
+          </label>
           <input
+            id="login-email"
             type="email"
             name="email"
             required
+            autoFocus
             className="w-full bg-bg-surface border border-border rounded-lg px-3 py-2.5 text-sm outline-none transition-all duration-150 focus:border-magenta focus:ring-2 focus:ring-magenta/25"
           />
         </div>
         <div>
-          <label className="mono block text-xs text-text-muted mb-1.5">PASSWORD</label>
+          <label htmlFor="login-password" className="mono block text-xs text-text-muted mb-1.5">
+            PASSWORD
+          </label>
           <input
+            id="login-password"
             type="password"
             name="password"
             required

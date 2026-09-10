@@ -53,6 +53,7 @@ export default function TabBar() {
           <Link
             key={tab.href}
             href={tab.href}
+            aria-current={active ? "page" : undefined}
             className={`relative flex-1 flex flex-col items-center gap-1 py-2.5 pb-3 text-[10px] transition-colors duration-200 ${
               active ? "text-magenta" : "text-text-faint hover:text-text-muted"
             }`}
@@ -60,7 +61,7 @@ export default function TabBar() {
             {active && (
               <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full bg-magenta shadow-[0_0_8px_rgba(255,46,122,0.7)]" />
             )}
-            <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.8}>
+            <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.8} aria-hidden="true">
               {tab.icon}
             </svg>
             <span className="mono tracking-wide">{tab.label}</span>

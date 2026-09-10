@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { cloneElement, useEffect, useState, type ReactElement } from "react";
 import type { Concert, ConcertInput } from "@/lib/supabase/types";
 
 const GENRES = ["Techno", "House", "Electronic", "Downtempo", "Bass", "Indie", "Hip-Hop", "Other"];
@@ -33,6 +33,15 @@ export default function ConcertFormModal({
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   async function handleSave() {
     if (!form.artist.trim() || !form.venue.trim() || !form.date) {
       setError("Add an artist, venue, and date before saving.");
@@ -63,22 +72,34 @@ export default function ConcertFormModal({
       className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-end justify-center z-20 animate-fade-in"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className="w-full max-w-[var(--shell-width)] bg-bg-elevated rounded-t-3xl px-5 pt-5 pb-6 max-h-[85vh] overflow-y-auto border-t border-border/70 shadow-[0_-8px_40px_rgba(0,0,0,0.5)] animate-sheet-in">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="concert-modal-title"
+        className="w-full max-w-[var(--shell-width)] bg-bg-elevated rounded-t-3xl px-5 pt-5 pb-6 max-h-[85vh] overflow-y-auto border-t border-border/70 shadow-[0_-8px_40px_rgba(0,0,0,0.5)] animate-sheet-in"
+      >
         <div className="w-9 h-1 rounded-full bg-border mx-auto mb-4" />
-        <h2 className="display text-xl mb-4">{concert ? "Edit Show" : "Log a Show"}</h2>
+        <h2 id="concert-modal-title" className="display text-xl mb-4">
+          {concert ? "Edit Show" : "Log a Show"}
+        </h2>
 
-        {error && <div className="text-xs text-amber bg-amber/10 border border-amber rounded-lg px-3 py-2 mb-3">{error}</div>}
+        {error && (
+          <div role="alert" className="text-xs text-amber bg-amber/10 border border-amber rounded-lg px-3 py-2 mb-3">
+            {error}
+          </div>
+        )}
 
-        <Field label="ARTIST">
+        <Field id="f-artist" label="ARTIST">
           <input
             className={inputClass}
             value={form.artist}
             onChange={(e) => setForm({ ...form, artist: e.target.value })}
             placeholder="e.g. Overmono"
+            autoFocus
           />
         </Field>
         <div className="flex gap-2.5 mb-3.5">
-          <Field label="VENUE" className="flex-1">
+          <Field id="f-venue" label="VENUE" className="flex-1">
             <input
               className={inputClass}
               value={form.venue}
@@ -86,7 +107,7 @@ export default function ConcertFormModal({
               placeholder="e.g. Brooklyn Steel"
             />
           </Field>
-          <Field label="DATE" className="flex-1">
+          <Field id="f-date" label="DATE" className="flex-1">
             <input
               type="date"
               className={inputClass}
@@ -95,18 +116,14 @@ export default function ConcertFormModal({
             />
           </Field>
         </div>
-        <Field label="GENRE">
-          <select
-            className={inputClass}
-            value={form.genre}
-            onChange={(e) => setForm({ ...form, genre: e.target.value })}
-          >
+        <Field id="f-genre" label="GENRE">
+          <select className={inputClass} value={form.genre} onChange={(e) => setForm({ ...form, genre: e.target.value })}>
             {GENRES.map((g) => (
               <option key={g}>{g}</option>
             ))}
           </select>
         </Field>
-        <Field label="YOUR SCORE">
+        <Field id="f-score" label="YOUR SCORE">
           <div className="flex items-center gap-3">
             <input
               type="range"
@@ -116,11 +133,14 @@ export default function ConcertFormModal({
               value={form.score}
               onChange={(e) => setForm({ ...form, score: parseInt(e.target.value, 10) })}
               className="flex-1 accent-magenta"
+              aria-valuetext={`${form.score} out of 10`}
             />
-            <div className="mono font-bold text-magenta w-8 text-center">{form.score}</div>
+            <div className="mono font-bold text-magenta w-8 text-center" aria-hidden="true">
+              {form.score}
+            </div>
           </div>
         </Field>
-        <Field label="NOTES (OPTIONAL)">
+        <Field id="f-notes" label="NOTES (OPTIONAL)">
           <textarea
             className={`${inputClass} min-h-15 resize-y`}
             value={form.notes}
@@ -159,11 +179,23 @@ export default function ConcertFormModal({
   );
 }
 
-function Field({ label, children, className }: { label: string; children: React.ReactNode; className?: string }) {
+function Field({
+  id,
+  label,
+  children,
+  className,
+}: {
+  id: string;
+  label: string;
+  children: ReactElement<{ id?: string }>;
+  className?: string;
+}) {
   return (
     <div className={`mb-3.5 ${className ?? ""}`}>
-      <label className="mono block text-[11px] text-text-muted mb-1.5">{label}</label>
-      {children}
+      <label htmlFor={id} className="mono block text-[11px] text-text-muted mb-1.5">
+        {label}
+      </label>
+      {cloneElement(children, { id })}
     </div>
   );
 }

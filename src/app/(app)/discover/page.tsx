@@ -55,6 +55,7 @@ export default function DiscoverPage() {
 
       <div className="flex gap-1.5 mb-4">
         <input
+          aria-label="Artist"
           value={keyword}
           onChange={(e) => setKeyword(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && search()}
@@ -62,6 +63,7 @@ export default function DiscoverPage() {
           className="flex-[1.3] min-w-0 bg-bg-elevated border border-border rounded-lg px-2.5 py-2.5 text-sm outline-none transition-all duration-150 focus:border-magenta focus:ring-2 focus:ring-magenta/25"
         />
         <input
+          aria-label="City"
           value={city}
           onChange={(e) => setCity(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && search()}
@@ -78,14 +80,14 @@ export default function DiscoverPage() {
       </div>
 
       {loading && (
-        <div className="text-center py-10 text-text-muted text-xs flex flex-col items-center gap-3">
-          <span className="w-5 h-5 rounded-full border-2 border-border border-t-cyan animate-spin" />
+        <div role="status" className="text-center py-10 text-text-muted text-xs flex flex-col items-center gap-3">
+          <span className="w-5 h-5 rounded-full border-2 border-border border-t-cyan animate-spin" aria-hidden="true" />
           Searching live listings…
         </div>
       )}
 
       {!loading && error && (
-        <div className="text-center py-10 px-5 text-text-muted">
+        <div role="alert" className="text-center py-10 px-5 text-text-muted">
           <div className="display text-xl text-text-faint mb-2">Search failed</div>
           <p className="text-xs leading-relaxed">{error}</p>
         </div>

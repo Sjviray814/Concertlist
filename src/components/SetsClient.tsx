@@ -64,6 +64,7 @@ export default function SetsClient({ concerts }: { concerts: Concert[] }) {
           <button
             key={s}
             onClick={() => setSort(s)}
+            aria-pressed={sort === s}
             className={`mono flex-none text-[11px] px-3 py-1.5 rounded-full border whitespace-nowrap transition-all duration-150 active:scale-95 ${
               sort === s
                 ? "bg-magenta border-magenta text-white shadow-[0_2px_10px_rgba(255,46,122,0.35)]"
@@ -80,6 +81,7 @@ export default function SetsClient({ concerts }: { concerts: Concert[] }) {
           <button
             key={g}
             onClick={() => setGenre(g)}
+            aria-pressed={genre === g}
             className={`mono flex-none text-[11px] px-3 py-1.5 rounded-full border whitespace-nowrap transition-all duration-150 active:scale-95 ${
               genre === g
                 ? "bg-magenta border-magenta text-white shadow-[0_2px_10px_rgba(255,46,122,0.35)]"
@@ -115,8 +117,9 @@ export default function SetsClient({ concerts }: { concerts: Concert[] }) {
           boxShadow: "0 8px 24px -4px rgba(255, 46, 122, 0.5)",
         }}
         title="Log a show"
+        aria-label="Log a show"
       >
-        +
+        <span aria-hidden="true">+</span>
       </button>
 
       {modalOpen && (

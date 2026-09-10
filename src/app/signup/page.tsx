@@ -22,23 +22,32 @@ export default async function SignupPage({
         className="bg-bg-elevated border border-border/80 rounded-xl p-6 flex flex-col gap-4 shadow-[0_16px_48px_rgba(0,0,0,0.35)] animate-screen-in"
       >
         {error && (
-          <div className="text-xs text-amber bg-amber/10 border border-amber rounded-lg px-3 py-2">{error}</div>
+          <div role="alert" className="text-xs text-amber bg-amber/10 border border-amber rounded-lg px-3 py-2">
+            {error}
+          </div>
         )}
 
         <div>
-          <label className="mono block text-xs text-text-muted mb-1.5">USERNAME</label>
+          <label htmlFor="signup-username" className="mono block text-xs text-text-muted mb-1.5">
+            USERNAME
+          </label>
           <input
+            id="signup-username"
             type="text"
             name="username"
             required
+            autoFocus
             pattern="[a-zA-Z0-9_]{3,20}"
             title="3-20 characters: letters, numbers, underscore"
             className="w-full bg-bg-surface border border-border rounded-lg px-3 py-2.5 text-sm outline-none transition-all duration-150 focus:border-magenta focus:ring-2 focus:ring-magenta/25"
           />
         </div>
         <div>
-          <label className="mono block text-xs text-text-muted mb-1.5">EMAIL</label>
+          <label htmlFor="signup-email" className="mono block text-xs text-text-muted mb-1.5">
+            EMAIL
+          </label>
           <input
+            id="signup-email"
             type="email"
             name="email"
             required
@@ -46,8 +55,11 @@ export default async function SignupPage({
           />
         </div>
         <div>
-          <label className="mono block text-xs text-text-muted mb-1.5">PASSWORD</label>
+          <label htmlFor="signup-password" className="mono block text-xs text-text-muted mb-1.5">
+            PASSWORD
+          </label>
           <input
+            id="signup-password"
             type="password"
             name="password"
             required
